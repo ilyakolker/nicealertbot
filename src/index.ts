@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import fetch from 'node-fetch';
 import express from 'express';
 import { initDb, runMigrations, getActiveSubscriberCount } from './db';
 import { registerWebhook, setBotCommands } from './telegram';
@@ -71,6 +72,15 @@ async function main() {
     const port = Number(process.env.PORT) || 3000;
     app.listen(port, () => {
       console.log(`✅ NiceAlert Bot v1.1 running on port ${port}`);
+
+      // 6. Self-ping to prevent Render free tier from sleeping
+      const renderUrl = process.env.RENDER_URL;
+      if (renderUrl) {
+        setInterval(() => {
+          fetch(`${renderUrl}/health`).catch(() => {});
+        }, 5 * 60 * 1000); // every 5 minutes
+        console.log('✅ Self-ping enabled (every 5 min)');
+      }
     });
   } catch (err) {
     console.error('Fatal startup error:', err);
