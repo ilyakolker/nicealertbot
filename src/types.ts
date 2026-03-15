@@ -29,6 +29,16 @@ export interface OrefAlert {
   desc: string;
 }
 
+export interface OrefHistoryEntry {
+  data: string;
+  date: string;
+  time: string;
+  alertDate: string;
+  category: number;
+  category_desc: string;
+  rid: number;
+}
+
 export interface CityOption {
   label: string;
   value: string;

@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import { OrefAlert, CityOption } from './types';
+import { OrefAlert, CityOption, OrefHistoryEntry } from './types';
 
 const OREF_HEADERS: Record<string, string> = {
   'X-Requested-With': 'XMLHttpRequest',
@@ -61,6 +61,22 @@ export async function fetchOrefAlert(): Promise<OrefAlert | null> {
     console.error('fetchOrefAlert error:', err);
     return null;
   }
+}
+
+export async function fetchAlertHistory(): Promise<OrefHistoryEntry[]> {
+  try {
+    const res = await fetch(
+      'https://alerts-history.oref.org.il/Shared/Ajax/GetAlarmsHistory.aspx?lang=he&mode=last24hours',
+      { headers: OREF_HEADERS, agent: getProxyAgent() }
+    );
+    if (res.ok) {
+      const data = (await res.json()) as OrefHistoryEntry[];
+      if (Array.isArray(data)) return data;
+    }
+  } catch (err) {
+    console.error('fetchAlertHistory error:', err);
+  }
+  return [];
 }
 
 export async function searchOrefCities(query: string): Promise<CityOption[]> {
