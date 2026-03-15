@@ -134,8 +134,15 @@ async function cmdStart(msg: TelegramMessage): Promise<void> {
   const chatId = msg.chat.id;
   const lang = detectLang(msg.from?.language_code);
   await upsertSubscriber(chatId, lang);
+  // Step 1: Welcome + language selection
+  const kb: InlineKeyboardMarkup = {
+    inline_keyboard: [[
+      { text: '🇮🇱 עברית', callback_data: 'setup_lang_he' },
+      { text: '🇬🇧 English', callback_data: 'setup_lang_en' },
+    ]],
+  };
   await sendTelegramMessage(chatId, t('welcome', lang));
-  await promptCitySearch(chatId, lang, 'setup');
+  await sendTelegramMessage(chatId, t('langSelect', lang), kb);
 }
 
 async function cmdLocation(chatId: number): Promise<void> {
@@ -309,6 +316,22 @@ async function handleCallback(cb: TelegramCallbackQuery): Promise<void> {
       await answerCallbackQuery(cb.id);
       const city = await getLocationDisplay(chatId, lang);
       await sendTelegramMessage(chatId, t('setupComplete', lang)(city));
+      break;
+    }
+    case 'setup_lang_he': {
+      await updateLang(chatId, 'he');
+      await answerCallbackQuery(cb.id);
+      await sendTelegramMessage(chatId, t('langChanged', 'he'));
+      // Step 2: City selection
+      await promptCitySearch(chatId, 'he', 'setup');
+      break;
+    }
+    case 'setup_lang_en': {
+      await updateLang(chatId, 'en');
+      await answerCallbackQuery(cb.id);
+      await sendTelegramMessage(chatId, t('langChanged', 'en'));
+      // Step 2: City selection
+      await promptCitySearch(chatId, 'en', 'setup');
       break;
     }
     case 'lang_he': {
