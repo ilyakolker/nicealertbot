@@ -59,8 +59,8 @@ const strings = {
     en: '✅ Subscribed to all of Israel 🇮🇱',
   },
   soundInstructions: {
-    he: '🎵 כיצד להגדיר צליל מותאם אישית:\n\n1. לחץ על שם הצ\'אט הזה בחלק העליון\n2. בחר "התראות"\n3. לחץ על "צליל"\n4. בחר צליל מהרשימה, או לחץ + להעלאת קובץ משלך (עד 300KB — MP3, OGG, AAC)\n\n✅ הצליל ישמע בכל התראה — גם כשהמסך נעול!',
-    en: '🎵 How to set a custom notification sound:\n\n1. Tap this chat\'s name at the top\n2. Select "Notifications"\n3. Tap "Sound"\n4. Pick from the list, or tap + to upload your own file (up to 300KB — MP3, OGG, AAC)\n\n✅ The sound will play on every alert — even when your screen is locked!',
+    he: '🎵 כיצד להגדיר צליל מותאם אישית:\n\n1. לחץ על שם הבוט בחלק העליון\n2. לחץ על "השתק"\n3. בחר "התאמה אישית"\n4. לחץ על "צליל"\n5. בחר צליל מהרשימה, או לחץ + להעלאת קובץ משלך (עד 300KB — MP3, OGG, AAC)\n\n✅ הצליל ישמע בכל התראה — גם כשהמסך נעול!',
+    en: '🎵 How to set a custom notification sound:\n\n1. Tap the bot\'s name at the top\n2. Tap "Mute"\n3. Select "Customize"\n4. Tap "Sound"\n5. Pick from the list, or tap + to upload your own file (up to 300KB — MP3, OGG, AAC)\n\n✅ The sound will play on every alert — even when your screen is locked!',
   },
   soundDoneBtn: {
     he: '✅ הבנתי',
