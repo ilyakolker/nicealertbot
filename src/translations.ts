@@ -34,9 +34,25 @@ const strings = {
     he: (q: string) => `❌ לא נמצאו תוצאות עבור "${q}". נסה שוב:`,
     en: (q: string) => `❌ No results for "${q}". Try again:`,
   },
-  citySaved: {
-    he: (city: string) => `✅ מיקום נשמר: ${city}`,
-    en: (city: string) => `✅ Location saved: ${city}`,
+  cityAdded: {
+    he: (city: string) => `✅ עיר נוספה: ${city}`,
+    en: (city: string) => `✅ City added: ${city}`,
+  },
+  cityRemoved: {
+    he: (city: string) => `✅ עיר הוסרה: ${city}`,
+    en: (city: string) => `✅ City removed: ${city}`,
+  },
+  currentCities: {
+    he: '📍 הערים שלך:',
+    en: '📍 Your cities:',
+  },
+  noCities: {
+    he: 'לא נבחרו ערים',
+    en: 'No cities selected',
+  },
+  addMore: {
+    he: '➕ הוסף עיר',
+    en: '➕ Add city',
   },
   allIsraelSaved: {
     he: '✅ נרשמת לכל הארץ 🇮🇱',
@@ -90,7 +106,7 @@ const strings = {
     he: `📋 <b>רשימת פקודות:</b>
 
 /start — התחלה + רישום
-/location — שינוי עיר
+/location — ניהול ערים
 /mystatus — הצגת מצב נוכחי
 /sound — הגדרת צליל התראה
 /language — שינוי שפה
@@ -101,7 +117,7 @@ const strings = {
     en: `📋 <b>Command list:</b>
 
 /start — Start + register
-/location — Change city
+/location — Manage cities
 /mystatus — View current status
 /sound — Set alert sound
 /language — Change language

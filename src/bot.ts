@@ -4,7 +4,7 @@ import {
 } from './types';
 import { t, formatAlertMessage, ALERT_TYPES } from './translations';
 import {
-  upsertSubscriber, getSubscriber, updateCity, setAllIsrael,
+  upsertSubscriber, getSubscriber, addCity, removeCity, setAllIsrael,
   updateLang, setSubscriberActive,
 } from './db';
 import {
@@ -46,7 +46,30 @@ async function getLocationDisplay(chatId: number, lang: Lang): Promise<string> {
   const sub = await getSubscriber(chatId);
   if (!sub) return lang === 'he' ? 'לא נבחר' : 'Not set';
   if (sub.all_israel) return lang === 'he' ? 'כל הארץ 🇮🇱' : 'All Israel 🇮🇱';
-  return sub.city ?? (lang === 'he' ? 'לא נבחר' : 'Not set');
+  if (sub.cities.length === 0) return lang === 'he' ? 'לא נבחר' : 'Not set';
+  return sub.cities.join(', ');
+}
+
+async function showCityManagement(chatId: number, lang: Lang): Promise<void> {
+  const sub = await getSubscriber(chatId);
+  if (!sub) return;
+
+  const rows: { text: string; callback_data: string }[][] = [];
+
+  if (sub.cities.length > 0) {
+    for (const city of sub.cities) {
+      rows.push([{ text: `❌ ${city}`, callback_data: `rm:${city}` }]);
+    }
+  }
+
+  rows.push([{ text: t('addMore', lang), callback_data: 'add_city' }]);
+  rows.push([{ text: t('allIsrael', lang), callback_data: 'all_israel' }]);
+
+  const header = sub.cities.length > 0
+    ? `${t('currentCities', lang)}\n${sub.cities.join(', ')}`
+    : t('noCities', lang);
+
+  await sendTelegramMessage(chatId, header, { inline_keyboard: rows });
 }
 
 export async function handleUpdate(update: TelegramUpdate): Promise<void> {
@@ -116,7 +139,7 @@ async function cmdLocation(chatId: number): Promise<void> {
     return;
   }
   const lang = sub.lang as Lang;
-  await promptCitySearch(chatId, lang, 'update');
+  await showCityManagement(chatId, lang);
 }
 
 async function cmdMyStatus(chatId: number): Promise<void> {
@@ -153,7 +176,7 @@ async function cmdLanguage(chatId: number): Promise<void> {
 
 async function cmdTest(chatId: number): Promise<void> {
   const sub = await getSubscriber(chatId);
-  if (!sub || (!sub.city && !sub.all_israel)) {
+  if (!sub || (sub.cities.length === 0 && !sub.all_israel)) {
     const lang = sub?.lang as Lang ?? 'he';
     await sendTelegramMessage(chatId, t('testNoCity', lang));
     return;
@@ -161,7 +184,7 @@ async function cmdTest(chatId: number): Promise<void> {
   const lang = sub.lang as Lang;
   const areas = sub.all_israel
     ? ['תל אביב - מרכז העיר', 'חיפה - מרכז הכרמל', 'באר שבע - מרכז']
-    : [sub.city!];
+    : sub.cities;
   const title = lang === 'he' ? 'ירי רקטות וטילים' : 'Rocket and missile fire';
   const time = new Date().toLocaleTimeString('he-IL', { hour12: false });
   const text = formatAlertMessage(title, areas, time, lang);
@@ -228,16 +251,37 @@ async function handleCallback(cb: TelegramCallbackQuery): Promise<void> {
 
   if (data.startsWith('city:')) {
     const city = data.slice(5);
-    await updateCity(chatId, city);
+    const state = searchStates.get(chatId);
+    await addCity(chatId, city);
     searchStates.delete(chatId);
     const lang = await getSubLang(chatId);
     await answerCallbackQuery(cb.id);
-    await sendTelegramMessage(chatId, t('citySaved', lang)(city));
-    await sendSoundInstructions(chatId, lang);
+    await sendTelegramMessage(chatId, t('cityAdded', lang)(city));
+    if (state?.context === 'setup') {
+      await sendSoundInstructions(chatId, lang);
+    } else {
+      await showCityManagement(chatId, lang);
+    }
+    return;
+  }
+
+  if (data.startsWith('rm:')) {
+    const city = data.slice(3);
+    await removeCity(chatId, city);
+    const lang = await getSubLang(chatId);
+    await answerCallbackQuery(cb.id);
+    await sendTelegramMessage(chatId, t('cityRemoved', lang)(city));
+    await showCityManagement(chatId, lang);
     return;
   }
 
   switch (data) {
+    case 'add_city': {
+      const lang = await getSubLang(chatId);
+      await answerCallbackQuery(cb.id);
+      await promptCitySearch(chatId, lang, 'update');
+      break;
+    }
     case 'all_israel': {
       await setAllIsrael(chatId);
       searchStates.delete(chatId);

@@ -21,9 +21,15 @@ export async function runMigrations() {
       updated_at   TIMESTAMPTZ DEFAULT NOW()
     )
   `;
-  await sql`CREATE INDEX IF NOT EXISTS idx_sub_city    ON subscribers(city)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_sub_active  ON subscribers(active)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_sub_chat_id ON subscribers(chat_id)`;
+
+  // Migrate from single city to cities array
+  await sql`ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS cities TEXT[] DEFAULT '{}'`;
+  await sql`UPDATE subscribers SET cities = ARRAY[city] WHERE city IS NOT NULL AND cities = '{}'`;
+  await sql`ALTER TABLE subscribers DROP COLUMN IF EXISTS city`;
+  await sql`DROP INDEX IF EXISTS idx_sub_city`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_sub_cities ON subscribers USING GIN(cities)`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS alert_log (
@@ -55,10 +61,22 @@ export async function getSubscriber(chatId: number): Promise<Subscriber | null> 
   return rows.length > 0 ? rows[0] : null;
 }
 
-export async function updateCity(chatId: number, city: string): Promise<void> {
+export async function addCity(chatId: number, city: string): Promise<void> {
   await sql`
     UPDATE subscribers
-    SET city = ${city}, all_israel = false, updated_at = NOW()
+    SET cities = array_append(cities, ${city}),
+        all_israel = false,
+        updated_at = NOW()
+    WHERE chat_id = ${chatId}
+    AND NOT (${city} = ANY(cities))
+  `;
+}
+
+export async function removeCity(chatId: number, city: string): Promise<void> {
+  await sql`
+    UPDATE subscribers
+    SET cities = array_remove(cities, ${city}),
+        updated_at = NOW()
     WHERE chat_id = ${chatId}
   `;
 }
@@ -66,7 +84,7 @@ export async function updateCity(chatId: number, city: string): Promise<void> {
 export async function setAllIsrael(chatId: number): Promise<void> {
   await sql`
     UPDATE subscribers
-    SET all_israel = true, city = ${null}, updated_at = NOW()
+    SET all_israel = true, cities = '{}'::text[], updated_at = NOW()
     WHERE chat_id = ${chatId}
   `;
 }
@@ -89,7 +107,7 @@ export async function getMatchingSubscribers(areas: string[]): Promise<{ chat_id
   const rows = await sql<{ chat_id: number; lang: string }[]>`
     SELECT chat_id, lang FROM subscribers
     WHERE active = true
-    AND (city = ANY(${sql.array(areas)}::text[]) OR all_israel = true)
+    AND (cities && ${sql.array(areas)}::text[] OR all_israel = true)
   `;
   return rows.map(r => ({ chat_id: Number(r.chat_id), lang: r.lang as Lang }));
 }

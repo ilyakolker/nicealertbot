@@ -112,7 +112,7 @@ export async function registerWebhook(url: string, secret: string): Promise<void
 export async function setBotCommands(): Promise<void> {
   const commands = [
     { command: 'start', description: 'התחלה / Start' },
-    { command: 'location', description: 'שינוי עיר / Change city' },
+    { command: 'location', description: 'ניהול ערים / Manage cities' },
     { command: 'mystatus', description: 'מצב נוכחי / Current status' },
     { command: 'sound', description: 'צליל התראה / Alert sound' },
     { command: 'language', description: 'שפה / Language' },

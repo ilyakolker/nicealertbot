@@ -3,7 +3,7 @@ export type Lang = 'he' | 'en';
 export interface Subscriber {
   id: string;
   chat_id: number;
-  city: string | null;
+  cities: string[];
   all_israel: boolean;
   lang: Lang;
   active: boolean;
