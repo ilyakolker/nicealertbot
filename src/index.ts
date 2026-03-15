@@ -70,7 +70,7 @@ async function main() {
     // 5. Express
     const port = Number(process.env.PORT) || 3000;
     app.listen(port, () => {
-      console.log(`✅ NiceAlert Bot running on port ${port}`);
+      console.log(`✅ NiceAlert Bot v1.1 running on port ${port}`);
     });
   } catch (err) {
     console.error('Fatal startup error:', err);
