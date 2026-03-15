@@ -224,6 +224,20 @@ async function handleCitySearch(chatId: number, query: string): Promise<void> {
   // Check for "all israel" typed text
   const qLower = query.toLowerCase();
   if (qLower === 'כל הארץ' || qLower === 'all' || qLower === 'all israel') {
+    const sub = await getSubscriber(chatId);
+    if (sub && sub.cities.length > 0) {
+      const kb: InlineKeyboardMarkup = {
+        inline_keyboard: [
+          [{ text: lang === 'he' ? '✅ כן, עבור לכל הארץ' : '✅ Yes, switch to All Israel', callback_data: 'confirm_all_israel' }],
+          [{ text: lang === 'he' ? '❌ ביטול' : '❌ Cancel', callback_data: 'cancel_all_israel' }],
+        ],
+      };
+      const warning = lang === 'he'
+        ? `⚠️ שים לב: בחירת "כל הארץ" תסיר את הערים שבחרת:\n${sub.cities.join(', ')}`
+        : `⚠️ Warning: selecting "All Israel" will remove your selected cities:\n${sub.cities.join(', ')}`;
+      await sendTelegramMessage(chatId, warning, kb);
+      return;
+    }
     await setAllIsrael(chatId);
     searchStates.delete(chatId);
     await sendTelegramMessage(chatId, t('allIsraelSaved', lang));
@@ -311,6 +325,24 @@ async function handleCallback(cb: TelegramCallbackQuery): Promise<void> {
       const lang = await getSubLang(chatId);
       await answerCallbackQuery(cb.id);
       await promptCitySearch(chatId, lang, 'update');
+      break;
+    }
+    case 'confirm_all_israel': {
+      const state = searchStates.get(chatId);
+      await setAllIsrael(chatId);
+      searchStates.delete(chatId);
+      const lang = await getSubLang(chatId);
+      await answerCallbackQuery(cb.id);
+      await sendTelegramMessage(chatId, t('allIsraelSaved', lang));
+      if (state?.context === 'setup') {
+        await sendSoundInstructions(chatId, lang);
+      }
+      break;
+    }
+    case 'cancel_all_israel': {
+      const lang = await getSubLang(chatId);
+      await answerCallbackQuery(cb.id);
+      await sendTelegramMessage(chatId, lang === 'he' ? '👍 הערים שלך נשמרו.' : '👍 Your cities were kept.');
       break;
     }
     case 'setup_add_more': {
