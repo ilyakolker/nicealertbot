@@ -15,6 +15,33 @@ function getProxyAgent(): HttpsProxyAgent<string> {
   return new HttpsProxyAgent(url);
 }
 
+let allCities: { label: string; value: string }[] = [];
+
+export async function loadCities(): Promise<void> {
+  try {
+    const res = await fetch(
+      'https://alerts-history.oref.org.il/Shared/Ajax/GetCitiesMix.aspx?lang=he',
+      { headers: OREF_HEADERS, agent: getProxyAgent() }
+    );
+    if (res.ok) {
+      const data = (await res.json()) as any[];
+      if (Array.isArray(data)) {
+        allCities = data.map((item: any) => ({
+          label: item.label_he ?? item.label ?? String(item),
+          value: item.label_he ?? item.label ?? String(item),
+        }));
+        console.log(`✅ Loaded ${allCities.length} cities from Oref`);
+        return;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load cities from Oref:', err);
+  }
+  // Fallback to static list
+  allCities = STATIC_AREAS.map(a => ({ label: a, value: a }));
+  console.warn(`⚠️ Using static fallback (${allCities.length} cities)`);
+}
+
 export async function fetchOrefAlert(): Promise<OrefAlert | null> {
   try {
     const res = await fetch(
@@ -38,29 +65,10 @@ export async function fetchOrefAlert(): Promise<OrefAlert | null> {
 
 export async function searchOrefCities(query: string): Promise<CityOption[]> {
   if (query.length < 2) return [];
-  try {
-    const url = `https://api.oref.org.il/api/v1/interactive/autocomplete?query=${encodeURIComponent(query)}&lang=he`;
-    const res = await fetch(url, {
-      headers: { ...OREF_HEADERS, 'Origin': 'https://www.oref.org.il' },
-      agent: getProxyAgent(),
-    });
-    if (res.ok) {
-      const data = (await res.json()) as any[];
-      if (Array.isArray(data) && data.length > 0) {
-        return data.slice(0, 8).map((item: any) => ({
-          label: item.label ?? item.name ?? String(item),
-          value: item.value ?? item.label ?? String(item),
-        }));
-      }
-    }
-  } catch (e) {
-    console.warn('oref autocomplete failed, using static fallback');
-  }
   const q = query.toLowerCase();
-  return STATIC_AREAS
-    .filter(a => a.toLowerCase().includes(q) || a.includes(query))
-    .slice(0, 8)
-    .map(a => ({ label: a, value: a }));
+  return allCities
+    .filter(a => a.label.toLowerCase().includes(q) || a.label.includes(query))
+    .slice(0, 8);
 }
 
 export const STATIC_AREAS: string[] = [

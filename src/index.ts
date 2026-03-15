@@ -4,6 +4,7 @@ import { initDb, runMigrations, getActiveSubscriberCount } from './db';
 import { registerWebhook, setBotCommands } from './telegram';
 import { handleUpdate } from './bot';
 import { startPoller, lastCheckTime, totalAlertsSent } from './poller';
+import { loadCities } from './oref';
 import { TelegramUpdate } from './types';
 
 const app = express();
@@ -49,7 +50,10 @@ async function main() {
     initDb();
     await runMigrations();
 
-    // 2. Webhook
+    // 2. Load cities
+    await loadCities();
+
+    // 3. Webhook
     const renderUrl = process.env.RENDER_URL;
     if (renderUrl) {
       await registerWebhook(`${renderUrl}/telegram/webhook`, process.env.WEBHOOK_SECRET!);
