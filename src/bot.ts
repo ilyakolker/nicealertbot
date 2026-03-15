@@ -19,15 +19,9 @@ function detectLang(languageCode?: string): Lang {
   return (languageCode === 'he' || languageCode === 'iw') ? 'he' : 'en';
 }
 
-function allIsraelButton(lang: Lang): InlineKeyboardMarkup {
-  return {
-    inline_keyboard: [[{ text: t('allIsrael', lang), callback_data: 'all_israel' }]],
-  };
-}
-
 async function promptCitySearch(chatId: number, lang: Lang, context: 'setup' | 'update' = 'setup') {
   searchStates.set(chatId, { awaitingSearch: true, context });
-  await sendTelegramMessage(chatId, t('promptCity', lang), allIsraelButton(lang));
+  await sendTelegramMessage(chatId, t('promptCity', lang));
 }
 
 async function sendSoundInstructions(chatId: number, lang: Lang) {
@@ -63,7 +57,6 @@ async function showCityManagement(chatId: number, lang: Lang): Promise<void> {
       rows.push([{ text: `❌ ${city}`, callback_data: `rm:${city}` }]);
     }
     rows.push([{ text: t('addMore', lang), callback_data: 'add_city' }]);
-    rows.push([{ text: `➕ ${t('allIsrael', lang)}`, callback_data: 'all_israel' }]);
   }
 
   let header: string;
@@ -226,6 +219,19 @@ async function cmdHelp(chatId: number): Promise<void> {
 
 async function handleCitySearch(chatId: number, query: string): Promise<void> {
   const lang = await getSubLang(chatId);
+  const state = searchStates.get(chatId);
+
+  // Check for "all israel" typed text
+  const qLower = query.toLowerCase();
+  if (qLower === 'כל הארץ' || qLower === 'all' || qLower === 'all israel') {
+    await setAllIsrael(chatId);
+    searchStates.delete(chatId);
+    await sendTelegramMessage(chatId, t('allIsraelSaved', lang));
+    if (state?.context === 'setup') {
+      await sendSoundInstructions(chatId, lang);
+    }
+    return;
+  }
 
   if (query.length < 2) {
     await sendTelegramMessage(chatId, t('minChars', lang));
@@ -236,7 +242,7 @@ async function handleCitySearch(chatId: number, query: string): Promise<void> {
 
   if (results.length === 0) {
     const noRes = t('noResults', lang)(query);
-    await sendTelegramMessage(chatId, noRes, allIsraelButton(lang));
+    await sendTelegramMessage(chatId, noRes);
     return;
   }
 
@@ -250,7 +256,6 @@ async function handleCitySearch(chatId: number, query: string): Promise<void> {
     }
     rows.push(row);
   }
-  rows.push([{ text: t('allIsrael', lang), callback_data: 'all_israel' }]);
 
   await sendTelegramMessage(chatId, `🔍 ${lang === 'he' ? 'תוצאות:' : 'Results:'}`, {
     inline_keyboard: rows,
@@ -271,7 +276,13 @@ async function handleCallback(cb: TelegramCallbackQuery): Promise<void> {
     await answerCallbackQuery(cb.id);
     await sendTelegramMessage(chatId, t('cityAdded', lang)(city));
     if (state?.context === 'setup') {
-      await sendSoundInstructions(chatId, lang);
+      const kb: InlineKeyboardMarkup = {
+        inline_keyboard: [
+          [{ text: t('addMore', lang), callback_data: 'setup_add_more' }],
+          [{ text: t('done', lang), callback_data: 'setup_done' }],
+        ],
+      };
+      await sendTelegramMessage(chatId, lang === 'he' ? 'רוצה להוסיף עיר נוספת?' : 'Want to add another city?', kb);
     } else {
       await showCityManagement(chatId, lang);
     }
@@ -300,6 +311,18 @@ async function handleCallback(cb: TelegramCallbackQuery): Promise<void> {
       const lang = await getSubLang(chatId);
       await answerCallbackQuery(cb.id);
       await promptCitySearch(chatId, lang, 'update');
+      break;
+    }
+    case 'setup_add_more': {
+      const lang = await getSubLang(chatId);
+      await answerCallbackQuery(cb.id);
+      await promptCitySearch(chatId, lang, 'setup');
+      break;
+    }
+    case 'setup_done': {
+      const lang = await getSubLang(chatId);
+      await answerCallbackQuery(cb.id);
+      await sendSoundInstructions(chatId, lang);
       break;
     }
     case 'all_israel': {

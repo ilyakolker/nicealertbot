@@ -19,8 +19,8 @@ const strings = {
     en: '🚨 Welcome to NiceAlert Bot!\n\nReceive Pikud HaOref alerts for your chosen city — with your custom sound.\n\nAverage delay from alert issuance: ~5 seconds.',
   },
   promptCity: {
-    he: '📍 הקלד את שם העיר שלך:',
-    en: '📍 Type your city name:',
+    he: '📍 הקלד את שם העיר שלך:\n\nאו כתוב "כל הארץ" לקבלת כל ההתראות.',
+    en: '📍 Type your city name:\n\nOr type "all" to receive all alerts.',
   },
   allIsrael: {
     he: '🇮🇱 כל הארץ',
@@ -53,6 +53,10 @@ const strings = {
   addMore: {
     he: '➕ הוסף עיר',
     en: '➕ Add city',
+  },
+  done: {
+    he: '✅ סיימתי',
+    en: '✅ Done',
   },
   allIsraelSaved: {
     he: '✅ נרשמת לכל הארץ 🇮🇱',
