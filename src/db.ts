@@ -87,6 +87,14 @@ export async function removeCity(chatId: number, city: string): Promise<void> {
   `;
 }
 
+export async function unsetAllIsrael(chatId: number): Promise<void> {
+  await sql`
+    UPDATE subscribers
+    SET all_israel = false, updated_at = NOW()
+    WHERE chat_id = ${chatId}
+  `;
+}
+
 export async function setAllIsrael(chatId: number): Promise<void> {
   await sql`
     UPDATE subscribers

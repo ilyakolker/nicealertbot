@@ -4,7 +4,7 @@ import {
 } from './types';
 import { t, formatAlertMessage, ALERT_TYPES } from './translations';
 import {
-  upsertSubscriber, getSubscriber, addCity, removeCity, setAllIsrael,
+  upsertSubscriber, getSubscriber, addCity, removeCity, setAllIsrael, unsetAllIsrael,
   updateLang, setSubscriberActive,
 } from './db';
 import {
@@ -56,18 +56,24 @@ async function showCityManagement(chatId: number, lang: Lang): Promise<void> {
 
   const rows: { text: string; callback_data: string }[][] = [];
 
-  if (sub.cities.length > 0) {
+  if (sub.all_israel) {
+    rows.push([{ text: `❌ ${t('allIsrael', lang)}`, callback_data: 'rm_all_israel' }]);
+  } else {
     for (const city of sub.cities) {
       rows.push([{ text: `❌ ${city}`, callback_data: `rm:${city}` }]);
     }
+    rows.push([{ text: t('addMore', lang), callback_data: 'add_city' }]);
+    rows.push([{ text: t('allIsrael', lang), callback_data: 'all_israel' }]);
   }
 
-  rows.push([{ text: t('addMore', lang), callback_data: 'add_city' }]);
-  rows.push([{ text: t('allIsrael', lang), callback_data: 'all_israel' }]);
-
-  const header = sub.cities.length > 0
-    ? `${t('currentCities', lang)}\n${sub.cities.join(', ')}`
-    : t('noCities', lang);
+  let header: string;
+  if (sub.all_israel) {
+    header = lang === 'he' ? '📍 רשום לכל הארץ 🇮🇱' : '📍 Subscribed to All Israel 🇮🇱';
+  } else if (sub.cities.length > 0) {
+    header = `${t('currentCities', lang)}\n${sub.cities.join(', ')}`;
+  } else {
+    header = t('noCities', lang);
+  }
 
   await sendTelegramMessage(chatId, header, { inline_keyboard: rows });
 }
@@ -276,6 +282,13 @@ async function handleCallback(cb: TelegramCallbackQuery): Promise<void> {
   }
 
   switch (data) {
+    case 'rm_all_israel': {
+      const lang = await getSubLang(chatId);
+      await unsetAllIsrael(chatId);
+      await answerCallbackQuery(cb.id);
+      await showCityManagement(chatId, lang);
+      break;
+    }
     case 'add_city': {
       const lang = await getSubLang(chatId);
       await answerCallbackQuery(cb.id);
