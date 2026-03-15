@@ -15,8 +15,8 @@ export const ALERT_TYPES: Record<string, string> = {
 
 const strings = {
   welcome: {
-    he: '🚨 ברוך הבא ל-NiceAlert Bot!\n\nקבל התראות פיקוד העורף לפי העיר שתבחר — עם הצליל שלך.\n\n⚠️ טלגרם עשוי לעלות 4.60 ש"ח בחנות האפליקציות.\n\nהשהייה ממוצעת מרגע האזעקה: ~5 שניות.',
-    en: '🚨 Welcome to NiceAlert Bot!\n\nReceive Pikud HaOref alerts for your chosen city — with your custom sound.\n\n⚠️ Telegram may cost ~$1.20 on the App Store.\n\nAverage delay from alert issuance: ~5 seconds.',
+    he: '🚨 ברוך הבא ל-NiceAlert Bot!\n\nקבל התראות פיקוד העורף לפי העיר שתבחר — עם הצליל שלך.\n\nהשהייה ממוצעת מרגע האזעקה: ~5 שניות.',
+    en: '🚨 Welcome to NiceAlert Bot!\n\nReceive Pikud HaOref alerts for your chosen city — with your custom sound.\n\nAverage delay from alert issuance: ~5 seconds.',
   },
   promptCity: {
     he: '📍 הקלד את שם העיר שלך:',
