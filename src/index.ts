@@ -7,9 +7,16 @@ import { handleUpdate } from './bot';
 import { startPoller, lastCheckTime, totalAlertsSent } from './poller';
 import { loadCities } from './oref';
 import { TelegramUpdate } from './types';
+import { landingHTML } from './landing';
 
 const app = express();
 app.use(express.json());
+
+// Landing page
+app.get('/', (_req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(landingHTML);
+});
 
 // CORS for /health
 app.use('/health', (_req, res, next) => {
