@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: nicealertbot
+    runtime: node
+    buildCommand: npm install && npx tsc
+    startCommand: node dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: WEBHOOK_SECRET
+        sync: false
+      - key: BRIGHTDATA_HOST
+        sync: false
+      - key: BRIGHTDATA_PORT
+        sync: false
+      - key: BRIGHTDATA_USER
+        sync: false
+      - key: BRIGHTDATA_PASS
+        sync: false
+      - key: RENDER_URL
+        sync: false
+      - key: POLL_INTERVAL_MS
+        value: "5000"
+      - key: PORT
+        value: "3000"
