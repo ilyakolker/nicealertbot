@@ -26,8 +26,14 @@ export async function runMigrations() {
 
   // Migrate from single city to cities array
   await sql`ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS cities TEXT[] DEFAULT '{}'`;
-  await sql`UPDATE subscribers SET cities = ARRAY[city] WHERE city IS NOT NULL AND cities = '{}'`;
-  await sql`ALTER TABLE subscribers DROP COLUMN IF EXISTS city`;
+  const hasCityCol = await sql`
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'subscribers' AND column_name = 'city' LIMIT 1
+  `;
+  if (hasCityCol.length > 0) {
+    await sql`UPDATE subscribers SET cities = ARRAY[city] WHERE city IS NOT NULL AND cities = '{}'`;
+    await sql`ALTER TABLE subscribers DROP COLUMN city`;
+  }
   await sql`DROP INDEX IF EXISTS idx_sub_city`;
   await sql`CREATE INDEX IF NOT EXISTS idx_sub_cities ON subscribers USING GIN(cities)`;
 
