@@ -63,7 +63,7 @@ async function showCityManagement(chatId: number, lang: Lang): Promise<void> {
       rows.push([{ text: `❌ ${city}`, callback_data: `rm:${city}` }]);
     }
     rows.push([{ text: t('addMore', lang), callback_data: 'add_city' }]);
-    rows.push([{ text: t('allIsrael', lang), callback_data: 'all_israel' }]);
+    rows.push([{ text: `➕ ${t('allIsrael', lang)}`, callback_data: 'all_israel' }]);
   }
 
   let header: string;
