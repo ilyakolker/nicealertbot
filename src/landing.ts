@@ -407,10 +407,10 @@ export const landingHTML = `<!DOCTYPE html>
       </div>
     </div>
     <div class="feature">
-      <span class="feature-icon">&#127468;&#127463;</span>
+      <span class="feature-icon">&#127760;</span>
       <div class="feature-title">
-        <span class="he">עברית + English</span>
-        <span class="en">Hebrew + English</span>
+        <span class="he">שפה</span>
+        <span class="en">Language</span>
       </div>
       <div class="feature-desc">
         <span class="he">תמיכה מלאה בשתי שפות</span>
