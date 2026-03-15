@@ -1,7 +1,7 @@
 import { OrefHistoryEntry, Lang } from './types';
 import { ALERT_TYPES, formatAlertMessage } from './translations';
 import { fetchAlertHistory } from './oref';
-import { getMatchingSubscribers, logAlert, updateAlertSentCount, setSubscriberActive } from './db';
+import { getMatchingSubscribers, logAlert, updateAlertSentCount, setSubscriberActive, alertExists } from './db';
 import { sendTelegramMessage } from './telegram';
 
 let lastSeenRid = 0;
@@ -59,6 +59,12 @@ async function processAlertGroup(entries: OrefHistoryEntry[]): Promise<void> {
   const titleEn = ALERT_TYPES[titleHe] ?? titleHe;
   const alertId = `${entries[0].alertDate}_${entries[0].category}`;
   const time = entries[0].time.slice(0, 5); // HH:MM
+
+  // Skip if already sent (prevents duplicates on restart)
+  if (await alertExists(alertId)) {
+    console.log(`Alert ${alertId} already sent, skipping`);
+    return;
+  }
 
   await logAlert(alertId, titleHe, titleEn, areas, 0);
 

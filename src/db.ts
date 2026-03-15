@@ -154,3 +154,10 @@ export async function getRecentAlerts(limit: number = 10) {
     SELECT * FROM alert_log ORDER BY detected_at DESC LIMIT ${limit}
   `;
 }
+
+export async function alertExists(alertId: string): Promise<boolean> {
+  const rows = await sql`
+    SELECT 1 FROM alert_log WHERE alert_id = ${alertId} LIMIT 1
+  `;
+  return rows.length > 0;
+}
