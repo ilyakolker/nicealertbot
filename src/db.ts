@@ -117,13 +117,13 @@ export async function setSubscriberActive(chatId: number, active: boolean): Prom
   `;
 }
 
-export async function getMatchingSubscribers(areas: string[]): Promise<{ chat_id: number; lang: Lang }[]> {
-  const rows = await sql<{ chat_id: number; lang: string }[]>`
-    SELECT chat_id, lang FROM subscribers
+export async function getMatchingSubscribers(areas: string[]): Promise<{ chat_id: number; lang: Lang; cities: string[]; all_israel: boolean }[]> {
+  const rows = await sql<{ chat_id: number; lang: string; cities: string[]; all_israel: boolean }[]>`
+    SELECT chat_id, lang, cities, all_israel FROM subscribers
     WHERE active = true
     AND (cities && ${areas}::text[] OR all_israel = true)
   `;
-  return rows.map(r => ({ chat_id: Number(r.chat_id), lang: r.lang as Lang }));
+  return rows.map(r => ({ chat_id: Number(r.chat_id), lang: r.lang as Lang, cities: r.cities, all_israel: r.all_israel }));
 }
 
 export async function getActiveSubscriberCount(): Promise<number> {

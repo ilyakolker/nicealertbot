@@ -85,7 +85,8 @@ async function processRealtimeAlert(alert: OrefAlert): Promise<void> {
     const lang = sub.lang as Lang;
     const title = lang === 'en' ? titleEn : alert.title;
     const time = new Date().toLocaleTimeString('he-IL', { hour12: false });
-    const text = formatAlertMessage(title, alert.data, time, lang);
+    const userCities = sub.all_israel ? undefined : sub.cities;
+    const text = formatAlertMessage(title, alert.data, time, lang, userCities);
     const ok = await sendTelegramMessage(sub.chat_id, text);
     if (ok) {
       count++;
@@ -123,7 +124,8 @@ async function processHistoryGroup(entries: OrefHistoryEntry[]): Promise<void> {
   for (const sub of subscribers) {
     const lang = sub.lang as Lang;
     const title = lang === 'en' ? titleEn : titleHe;
-    const text = formatAlertMessage(title, areas, time, lang);
+    const userCities = sub.all_israel ? undefined : sub.cities;
+    const text = formatAlertMessage(title, areas, time, lang, userCities);
     const ok = await sendTelegramMessage(sub.chat_id, text);
     if (ok) {
       count++;

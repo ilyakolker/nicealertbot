@@ -142,10 +142,39 @@ export function t(key: keyof typeof strings, lang: Lang): any {
   return strings[key][lang];
 }
 
-export function formatAlertMessage(title: string, areas: string[], time: string, lang: Lang): string {
-  const areaList = areas.slice(0, 20).join(', ');
-  if (lang === 'he') {
-    return `🚨 <b>${title}</b>\n\n📍 <b>אזורים מושפעים:</b>\n${areaList}\n\n🕑 ${time}\n⚠️ השהייה ממוצעת: ~5 שניות`;
+export function formatAlertMessage(title: string, areas: string[], time: string, lang: Lang, userCities?: string[]): string {
+  let matchedAreas: string[] = [];
+  let otherAreas: string[] = [];
+
+  if (userCities && userCities.length > 0) {
+    const userSet = new Set(userCities);
+    for (const area of areas) {
+      if (userSet.has(area)) {
+        matchedAreas.push(area);
+      } else {
+        otherAreas.push(area);
+      }
+    }
+  } else {
+    otherAreas = areas;
   }
-  return `🚨 <b>${title}</b>\n\n📍 <b>Affected areas:</b>\n${areaList}\n\n🕑 ${time}\n⚠️ Avg delay: ~5 seconds`;
+
+  const parts: string[] = [];
+  if (matchedAreas.length > 0) {
+    parts.push(`⚠️ <b>${matchedAreas.join(', ')}</b>`);
+  }
+  const othersToShow = otherAreas.slice(0, 15);
+  if (othersToShow.length > 0) {
+    parts.push(othersToShow.join(', '));
+  }
+  if (otherAreas.length > 15) {
+    const more = otherAreas.length - 15;
+    parts.push(lang === 'he' ? `ועוד ${more} אזורים...` : `and ${more} more areas...`);
+  }
+
+  const areaList = parts.join('\n');
+  if (lang === 'he') {
+    return `🚨 <b>${title}</b>\n\n📍 <b>אזורים מושפעים:</b>\n${areaList}\n\n🕑 ${time}`;
+  }
+  return `🚨 <b>${title}</b>\n\n📍 <b>Affected areas:</b>\n${areaList}\n\n🕑 ${time}`;
 }
