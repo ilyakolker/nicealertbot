@@ -121,7 +121,7 @@ export async function getMatchingSubscribers(areas: string[]): Promise<{ chat_id
   const rows = await sql<{ chat_id: number; lang: string }[]>`
     SELECT chat_id, lang FROM subscribers
     WHERE active = true
-    AND (cities && ${sql.array(areas)}::text[] OR all_israel = true)
+    AND (cities && ${areas}::text[] OR all_israel = true)
   `;
   return rows.map(r => ({ chat_id: Number(r.chat_id), lang: r.lang as Lang }));
 }
@@ -138,7 +138,7 @@ export async function logAlert(
 ): Promise<void> {
   await sql`
     INSERT INTO alert_log (alert_id, title_he, title_en, areas, sent_count)
-    VALUES (${alertId}, ${titleHe}, ${titleEn}, ${sql.array(areas)}, ${sentCount})
+    VALUES (${alertId}, ${titleHe}, ${titleEn}, ${areas}::text[], ${sentCount})
     ON CONFLICT (alert_id) DO NOTHING
   `;
 }
