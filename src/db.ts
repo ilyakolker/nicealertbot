@@ -161,3 +161,18 @@ export async function alertExists(alertId: string): Promise<boolean> {
   `;
   return rows.length > 0;
 }
+
+export async function getAlertAreas(alertId: string): Promise<string[] | null> {
+  const rows = await sql<{ areas: string[] }[]>`
+    SELECT areas FROM alert_log WHERE alert_id = ${alertId} LIMIT 1
+  `;
+  return rows.length > 0 ? rows[0].areas : null;
+}
+
+export async function appendAlertAreas(alertId: string, newAreas: string[]): Promise<void> {
+  await sql`
+    UPDATE alert_log
+    SET areas = array_cat(areas, ${newAreas}::text[])
+    WHERE alert_id = ${alertId}
+  `;
+}

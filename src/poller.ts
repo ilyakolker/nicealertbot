@@ -1,7 +1,7 @@
 import { OrefHistoryEntry, OrefAlert, Lang } from './types';
 import { ALERT_TYPES, formatAlertMessage } from './translations';
 import { fetchOrefAlert, fetchAlertHistory } from './oref';
-import { getMatchingSubscribers, logAlert, updateAlertSentCount, setSubscriberActive, alertExists } from './db';
+import { getMatchingSubscribers, logAlert, updateAlertSentCount, setSubscriberActive, alertExists, getAlertAreas, appendAlertAreas } from './db';
 import { sendTelegramMessage } from './telegram';
 
 const seenIds = new Set<string>();
@@ -107,14 +107,42 @@ async function processHistoryGroup(entries: OrefHistoryEntry[]): Promise<void> {
   const alertId = `history_${entries[0].alertDate}_${entries[0].category}`;
   const time = entries[0].time.slice(0, 5);
 
-  if (await alertExists(alertId)) {
-    return;
-  }
-
   // Check if realtime already sent this (different ID format)
-  // Skip if any realtime alert was logged in the last 60 seconds with same areas
   const realtimeAlreadySent = await alertExists(`realtime_${entries[0].alertDate}_${entries[0].category}`);
   if (realtimeAlreadySent) return;
+
+  // Check if we already processed this alert wave
+  const existingAreas = await getAlertAreas(alertId);
+
+  if (existingAreas) {
+    // Alert already processed — check for new areas that arrived late
+    const existingSet = new Set(existingAreas);
+    const newAreas = areas.filter(a => !existingSet.has(a));
+
+    if (newAreas.length === 0) return;
+
+    // New areas found! Send notifications for them
+    console.log(`📋 Late areas for ${alertId}: ${newAreas.join(', ')}`);
+    await appendAlertAreas(alertId, newAreas);
+
+    const subscribers = await getMatchingSubscribers(newAreas);
+    let count = 0;
+    for (const sub of subscribers) {
+      const lang = sub.lang as Lang;
+      const title = lang === 'en' ? titleEn : titleHe;
+      const userCities = sub.all_israel ? undefined : sub.cities;
+      const text = formatAlertMessage(title, newAreas, time, lang, userCities);
+      const ok = await sendTelegramMessage(sub.chat_id, text);
+      if (ok) {
+        count++;
+      } else {
+        await setSubscriberActive(sub.chat_id, false);
+      }
+    }
+    totalAlertsSent += count;
+    console.log(`📋 Late areas sent to ${count}/${subscribers.length}`);
+    return;
+  }
 
   await logAlert(alertId, titleHe, titleEn, areas, 0);
 
