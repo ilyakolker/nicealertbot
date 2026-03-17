@@ -4,7 +4,7 @@ import { fetchOrefAlert, fetchAlertHistory } from './oref';
 import { getMatchingSubscribers, logAlert, updateAlertSentCount, setSubscriberActive, alertExists, getAlertAreas, appendAlertAreas } from './db';
 import { sendTelegramMessage } from './telegram';
 
-const seenIds = new Set<string>();
+const seenAlerts = new Map<string, Set<string>>();
 export let lastCheckTime = new Date();
 export let totalAlertsSent = 0;
 
@@ -14,12 +14,22 @@ export function startPoller(): void {
     try {
       const alert = await fetchOrefAlert();
       lastCheckTime = new Date();
-      if (!alert?.id || seenIds.has(alert.id)) return;
-      seenIds.add(alert.id);
-      if (seenIds.size > 500) {
-        seenIds.delete(seenIds.values().next().value!);
+      if (!alert?.id || !Array.isArray(alert.data) || alert.data.length === 0) return;
+
+      const seenAreas = seenAlerts.get(alert.id);
+      if (seenAreas) {
+        // Check for new areas added to the same alert
+        const newAreas = alert.data.filter(a => !seenAreas.has(a));
+        if (newAreas.length === 0) return;
+        for (const a of newAreas) seenAreas.add(a);
+        await processRealtimeAlert({ ...alert, data: newAreas }, true);
+      } else {
+        seenAlerts.set(alert.id, new Set(alert.data));
+        if (seenAlerts.size > 500) {
+          seenAlerts.delete(seenAlerts.keys().next().value!);
+        }
+        await processRealtimeAlert(alert, false);
       }
-      await processRealtimeAlert(alert);
     } catch (err) {
       console.error('Realtime poll error:', err);
     }
@@ -67,16 +77,21 @@ export function startPoller(): void {
   console.log('✅ History backup poller started (10s interval)');
 }
 
-async function processRealtimeAlert(alert: OrefAlert): Promise<void> {
+async function processRealtimeAlert(alert: OrefAlert, isLateAreas: boolean): Promise<void> {
   const alertId = `realtime_${alert.id}`;
-
-  if (await alertExists(alertId)) {
-    console.log(`Alert ${alertId} already sent, skipping`);
-    return;
-  }
-
   const titleEn = ALERT_TYPES[alert.title] ?? alert.title;
-  await logAlert(alertId, alert.title, titleEn, alert.data, 0);
+
+  if (isLateAreas) {
+    // New areas added to an existing alert — append and notify
+    console.log(`⚡ Late realtime areas for ${alert.id}: ${alert.data.join(', ')}`);
+    await appendAlertAreas(alertId, alert.data);
+  } else {
+    if (await alertExists(alertId)) {
+      console.log(`Alert ${alertId} already sent, skipping`);
+      return;
+    }
+    await logAlert(alertId, alert.title, titleEn, alert.data, 0);
+  }
 
   const subscribers = await getMatchingSubscribers(alert.data);
 
@@ -95,7 +110,9 @@ async function processRealtimeAlert(alert: OrefAlert): Promise<void> {
     }
   }
 
-  await updateAlertSentCount(alertId, count);
+  if (!isLateAreas) {
+    await updateAlertSentCount(alertId, count);
+  }
   totalAlertsSent += count;
   console.log(`⚡ Realtime alert ${alert.id}: ${alert.data.join(', ')} — sent to ${count}/${subscribers.length}`);
 }
